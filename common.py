@@ -14,8 +14,10 @@ def image_to_byte_array(image: Image):
   return imgByteArr
 
 def recieve_data(socket):
-    len = int(socket.recv(1024))
-    print(len)
+    len_bytes = socket.recv(1024)
+    len = int.from_bytes(len_bytes, 'little')
+    print("recieving len ", len)
+    send_ready(socket)
     data = bytearray()
     # socket.settimeout(2)
     print("start recieve")
@@ -32,7 +34,10 @@ def recieve_data(socket):
 
 
 def send_data(socket, data):
-    socket.send(data.__len__())
+    len = data.__len__()
+    print("sending len ",len)
+    socket.send(len.to_bytes(len.bit_length(), byteorder='little'))
+    recv_ready(socket)
     socket.send(data)
 
 def send_screenshot(socket):

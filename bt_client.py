@@ -37,7 +37,7 @@ def send_file_cl(socket):
     send_file(path, socket)
     recv_ready(socket)
 
-def get_file(socket):
+def get_file_cl(socket):
     socket.send("get_file")
     print("input remote path to file")
     path = input()
