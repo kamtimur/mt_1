@@ -2,7 +2,7 @@ from bluetooth import *
 import pyautogui
 from PIL import Image
 import io
-
+import ntpath
 
 
 def image_to_byte_array(image: Image):
@@ -19,7 +19,7 @@ def recieve_bt(socket):
     while True:
         try:
             b = socket.recv(1024)
-            if b.len() == 0:
+            if b.__len__() == 0:
                 break
             data += b
         except Exception as e:
@@ -40,13 +40,13 @@ def parse_input(data, socket):
 
 def send_screenshot(socket):
     print("send_screenshot")
-    socket.send("ready")
     data = recieve_bt(socket)
 
     print(len(data))
     image = Image.open(io.BytesIO(data))
     image.save("out_screenshot.png")
     print("ss saved")
+    socket.send("ready")
     
 def get_screenshot(socket):
     print("get_screenshot")
@@ -55,23 +55,35 @@ def get_screenshot(socket):
     screenshot.save("screenshot.png")
     data = image_to_byte_array(screenshot)
     print(data.__len__())
-    # socket.send(data.__len__())
     socket.send(data)
 
 def send_file(socket):
     print("send_file")
+    filename = socket.recv(1024)
+    print("filename", filename)
+    data = recieve_bt(socket)
+    print("file_data", data)
+    file = open(filename, 'wb')
+    file.write(data)
+    file.close()
+    socket.send("ready")
 
-    socket.send("send_file")
-    data = socket.recv(1024)
-    if data == "ready":
-        print("add sent file")
-        #добавить отправку файла
 
 def get_file(socket):
     print("get_file")
-
-    socket.send("get_file")
+    path = socket.recv(1024)
+    file = open(path, "rb")
+    if file == None:
+        socket.send("error")
+        return
+    socket.send("ready")
+    file_data = file.read()
+    file.close()
+    socket.send(file_data)
     data = socket.recv(1024)
+    if data == b'ready':
+        print("file sent success")
+
     #добавить сохранение файла файла
 
 
@@ -94,14 +106,12 @@ print("Waiting for connection on RFCOMM channel %d" % port)
 client_sock, client_info = server_sock.accept()
 print("Accepted connection from ", client_info)
 
-try:
-    while True:
-        data = client_sock.recv(1024)
-        print("Received", data)
-        parse_input(data, client_sock)
-        print("ready for command")
-except OSError:
-    pass
+while True:
+    client_sock.setblocking(True)
+    data = client_sock.recv(1024)
+    print("Received", data)
+    parse_input(data, client_sock)
+    print("ready for command")
 
 print("Disconnected.")
 
