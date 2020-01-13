@@ -13,30 +13,36 @@ def image_to_byte_array(image: Image):
   imgByteArr = imgByteArr.getvalue()
   return imgByteArr
 
-def recieve_bt(socket):
+def recieve_data(socket):
+    len = int(socket.recv(1024))
+    print(len)
     data = bytearray()
-    socket.settimeout(2)
+    # socket.settimeout(2)
     print("start recieve")
     while True:
         try:
             b = socket.recv(1024)
-            if b.__len__() == 0:
-                break
             data+=b
+            if data.__len__() == len:
+                break
         except Exception as e:
             print(e)
             break
     return data
 
+
+def send_data(socket, data):
+    socket.send(data.__len__())
+    socket.send(data)
+
 def send_screenshot(socket):
     screenshot = pyautogui.screenshot()
     screenshot.save("my_screenshot.png")
     data = image_to_byte_array(screenshot)
-    print(data.__len__())
-    socket.send(data)
+    send_data(socket, data)
     
 def get_screenshot(socket):
-    data = recieve_bt(socket)
+    data = recieve_data(socket)
     print(len(data))
     image = Image.open(io.BytesIO(data))
     image.save("out_screenshot.png")
@@ -49,14 +55,14 @@ def send_file(path, socket):
     file.close()
     socket.send(filename)
     print("filename sent")
-    socket.send(file_data)
+    send_data(socket, file_data)
     print("filedata sent")
     
 def recv_file(socket):
     print("recieve filename")
     filename = socket.recv(1024)
     print("recieving file")
-    data = recieve_bt(socket)
+    data = recieve_data(socket)
     file = open(filename, 'wb')
     file.write(data)
     file.close()
