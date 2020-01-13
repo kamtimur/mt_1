@@ -84,7 +84,6 @@ def get_file(socket):
     if data == b'ready':
         print("file sent success")
 
-    #добавить сохранение файла файла
 
 
 server_sock = BluetoothSocket(RFCOMM)
