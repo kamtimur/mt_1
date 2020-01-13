@@ -3,7 +3,15 @@ import bluetooth
 import io
 from PIL import Image
 from PIL import ImageFile
+import pyautogui
+import ntpath
 ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+def image_to_byte_array(image: Image):
+  imgByteArr = io.BytesIO()
+  image.save(imgByteArr, format='PNG')
+  imgByteArr = imgByteArr.getvalue()
+  return imgByteArr
 
 local_mac = "e8:b1:fc:35:46:4c"
 serv_mac = "E4:70:B8:7A:69:A7"
@@ -18,7 +26,6 @@ def recieve_bt(socket):
             if b.__len__() == 0:
                 break
             data+=b
-            print(data.__len__())
         except Exception as e:
             print(e)
             break
@@ -28,7 +35,7 @@ def print_menu():
     print("1.Send screenshot")
     print("2.Get screenshot")
     print("3.Send file")
-    print("4.Get screenshot")
+    print("4.Get file")
 
 def choose_cmd(input, socket):
     if input == 1:
@@ -42,10 +49,17 @@ def choose_cmd(input, socket):
 
 def send_screenshot(socket):
     socket.send("send_screenshot")
+    screenshot = pyautogui.screenshot()
+    screenshot.save("my_screenshot.png")
+    data = image_to_byte_array(screenshot)
+    print(data.__len__())
+    socket.send(data)
     data = socket.recv(1024)
-    if data == "ready":
-        screenshot = pyautogui.screenshot()
-        socket.send(screenshot)
+    print(data)
+    if data != b'ready':
+        print("error send ss")
+    else:
+        print("send screenshot success")
     
 def get_screenshot(socket):
     socket.send("get_screenshot")
@@ -54,18 +68,43 @@ def get_screenshot(socket):
     image = Image.open(io.BytesIO(data))
     image.save("out_screenshot.png")
     print("ss saved")
-    # data.save("screenshot.png")
 
 def send_file(socket):
     socket.send("send_file")
+    print("input path")
+    path = input()
+    file = open(path, "rb")
+    filename = ntpath.basename(path)
+    file_data = file.read()
+    file.close()
+    socket.send(filename)
+    socket.send(file_data)
     data = socket.recv(1024)
-    if data == "ready":
-        print("add sent file")
-        #добавить отправку файла
+    if data != b'ready':
+        print("error send file")
+        return
+    else:
+        print("send file success")
+    #добавить отправку файла
 
 def get_file(socket):
     socket.send("get_file")
+    print("input remote path to file")
+    path = input()
+    filename = ntpath.basename(path)
+    socket.send(path)
     data = socket.recv(1024)
+    if data == b'ready':
+        print("recieving file")
+        data = recieve_bt(socket)
+        file = open(filename, 'wb')
+        file.write(data)
+        file.close()
+        socket.send("ready")
+        print("file recieved")
+    else:
+        print(encode(data))
+
     #добавить сохранение файла файла
 
 def connect_to_dev():
