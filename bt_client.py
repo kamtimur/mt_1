@@ -1,8 +1,28 @@
 import sys
-
 import bluetooth
+import io
+from PIL import Image
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 local_mac = "e8:b1:fc:35:46:4c"
+serv_mac = "E4:70:B8:7A:69:A7"
+
+def recieve_bt(socket):
+    data = bytearray()
+    socket.settimeout(2)
+    print("start recieve")
+    while True:
+        try:
+            b = socket.recv(1024)
+            if b.__len__() == 0:
+                break
+            data+=b
+            print(data.__len__())
+        except Exception as e:
+            print(e)
+            break
+    return data
 
 def print_menu():
     print("1.Send screenshot")
@@ -29,8 +49,12 @@ def send_screenshot(socket):
     
 def get_screenshot(socket):
     socket.send("get_screenshot")
-    data = socket.recv(1024)
-    data.save("screenshot.png")
+    data = recieve_bt(socket)
+    print(len(data))
+    image = Image.open(io.BytesIO(data))
+    image.save("out_screenshot.png")
+    print("ss saved")
+    # data.save("screenshot.png")
 
 def send_file(socket):
     socket.send("send_file")
@@ -57,16 +81,23 @@ def connect_to_dev():
         print("choose device to connect")
         dev_index = int(input())
     chosen_dev = nearby_devices[dev_index-1]
+    print(chosen_dev)
     return chosen_dev
 
-chosen_dev = connect_to_dev()
+# chosen_dev = connect_to_dev()
 sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-sock.connect((chosen_dev, 3))
+sock.connect((serv_mac, 1))
+print("connected")
 
-
-while True:
-    print_menu()
-    cmd = int(input())
-    choose_cmd(cmd, sock)
-
+try:
+    while True:
+        # sock.send("hello")
+        # print("send")
+        # data = sock.recv(1024)
+        # print("recv ",data)
+        print_menu()
+        cmd = int(input())
+        choose_cmd(cmd, sock)
+except Exception as e:
+    print(e)
 sock.close()
