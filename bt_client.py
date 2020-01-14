@@ -63,9 +63,9 @@ def connect_to_dev():
     print(chosen_dev)
     return chosen_dev
 
-# chosen_dev = connect_to_dev()
+chosen_dev = connect_to_dev()
 sock = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-sock.connect((serv_mac, 1))
+sock.connect((chosen_dev, 1))
 print("connected")
 
 try:
